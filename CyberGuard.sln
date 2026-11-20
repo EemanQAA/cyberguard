@@ -1,0 +1,64 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{284EF2A2-F2BF-4F35-8003-AEA3083A731C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CyberGuard.Domain", "src\CyberGuard.Domain\CyberGuard.Domain.csproj", "{955CA787-3D8D-4763-A172-4BCFC63D1011}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CyberGuard.Application", "src\CyberGuard.Application\CyberGuard.Application.csproj", "{31678A38-CC54-43C8-9A7B-284DBDAA0A6D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CyberGuard.Infrastructure", "src\CyberGuard.Infrastructure\CyberGuard.Infrastructure.csproj", "{5C3CC1D0-2B28-4061-9872-93C0C914AA5A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CyberGuard.Shared", "src\CyberGuard.Shared\CyberGuard.Shared.csproj", "{B8FAC668-454C-406B-B4A8-B33D3B70312F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CyberGuard.Api", "src\CyberGuard.Api\CyberGuard.Api.csproj", "{26B2E33E-1115-46F9-B1BE-E347D6A1D42E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{29AF2C92-B982-4AB0-B2FC-9984E7877D8E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CyberGuard.UnitTests", "tests\CyberGuard.UnitTests\CyberGuard.UnitTests.csproj", "{CAAF198B-A6D5-40ED-86EE-A47A02BE703E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{955CA787-3D8D-4763-A172-4BCFC63D1011}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{955CA787-3D8D-4763-A172-4BCFC63D1011}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{955CA787-3D8D-4763-A172-4BCFC63D1011}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{955CA787-3D8D-4763-A172-4BCFC63D1011}.Release|Any CPU.Build.0 = Release|Any CPU
+		{31678A38-CC54-43C8-9A7B-284DBDAA0A6D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{31678A38-CC54-43C8-9A7B-284DBDAA0A6D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{31678A38-CC54-43C8-9A7B-284DBDAA0A6D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{31678A38-CC54-43C8-9A7B-284DBDAA0A6D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5C3CC1D0-2B28-4061-9872-93C0C914AA5A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5C3CC1D0-2B28-4061-9872-93C0C914AA5A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5C3CC1D0-2B28-4061-9872-93C0C914AA5A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5C3CC1D0-2B28-4061-9872-93C0C914AA5A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B8FAC668-454C-406B-B4A8-B33D3B70312F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B8FAC668-454C-406B-B4A8-B33D3B70312F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B8FAC668-454C-406B-B4A8-B33D3B70312F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B8FAC668-454C-406B-B4A8-B33D3B70312F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{26B2E33E-1115-46F9-B1BE-E347D6A1D42E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{26B2E33E-1115-46F9-B1BE-E347D6A1D42E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{26B2E33E-1115-46F9-B1BE-E347D6A1D42E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{26B2E33E-1115-46F9-B1BE-E347D6A1D42E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CAAF198B-A6D5-40ED-86EE-A47A02BE703E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CAAF198B-A6D5-40ED-86EE-A47A02BE703E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CAAF198B-A6D5-40ED-86EE-A47A02BE703E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CAAF198B-A6D5-40ED-86EE-A47A02BE703E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{955CA787-3D8D-4763-A172-4BCFC63D1011} = {284EF2A2-F2BF-4F35-8003-AEA3083A731C}
+		{31678A38-CC54-43C8-9A7B-284DBDAA0A6D} = {284EF2A2-F2BF-4F35-8003-AEA3083A731C}
+		{5C3CC1D0-2B28-4061-9872-93C0C914AA5A} = {284EF2A2-F2BF-4F35-8003-AEA3083A731C}
+		{B8FAC668-454C-406B-B4A8-B33D3B70312F} = {284EF2A2-F2BF-4F35-8003-AEA3083A731C}
+		{26B2E33E-1115-46F9-B1BE-E347D6A1D42E} = {284EF2A2-F2BF-4F35-8003-AEA3083A731C}
+		{CAAF198B-A6D5-40ED-86EE-A47A02BE703E} = {29AF2C92-B982-4AB0-B2FC-9984E7877D8E}
+	EndGlobalSection
+EndGlobal

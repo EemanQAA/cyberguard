@@ -1,0 +1,41 @@
+version: "3.9"
+
+# Local development only: runs the API against a local Postgres container so you don't
+# need a live Supabase connection just to run `docker compose up`. Point the API at the
+# real Supabase project (via environment variables below, or appsettings.Development.json)
+# whenever you want to test against it instead.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: cyberguard
+      POSTGRES_PASSWORD: cyberguard_dev_only
+      POSTGRES_DB: cyberguard
+    ports:
+      - "5432:5432"
+    volumes:
+      - cyberguard_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cyberguard"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: src/CyberGuard.Api/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      ConnectionStrings__Default: "Host=postgres;Port=5432;Database=cyberguard;Username=cyberguard;Password=cyberguard_dev_only"
+      Jwt__SigningKey: "local-dev-signing-key-change-me-please-32chars"
+      Jwt__Issuer: "CyberGuard"
+      Jwt__Audience: "CyberGuard.Clients"
+      ASPNETCORE_ENVIRONMENT: "Development"
+
+volumes:
+  cyberguard_pgdata:

@@ -1,4 +1,8 @@
-using System.Text.RegularExpressions;
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
 
 namespace CyberGuard.Domain.Engines;
 
@@ -15,104 +19,235 @@ public record UrlRiskResult(int Score, IReadOnlyList<UrlRiskReason> Reasons)
 }
 
 /// <summary>
-/// Pure, framework-free static heuristics for the phishing URL scanner (UC-05).
-/// The server never fetches the URL - every rule works from the string alone plus,
-/// optionally, the resolved IP. ML scoring (Sprint 3+) sits alongside this as a
-/// separate IPhishingModel and the two are combined by the Application-layer scan service.
-/// Strategy pattern: each rule is an independent static check - add a new one without
-/// touching the others (Open/Closed principle, Section 5 design decision).
+/// Heuristic phishing URL risk detection engine (SCRUM-23).
+/// Evaluates URL strings without making network requests.
 /// </summary>
 public static class UrlRiskEngine
 {
     private static readonly string[] SuspiciousKeywords =
     {
-        "login", "verify", "secure", "update", "confirm", "account", "signin", "banking"
+        "login", "verify", "secure", "update",
+        "confirm", "account", "signin", "banking"
     };
 
     private static readonly string[] WellKnownBrands =
     {
-        "paypal.com", "google.com", "microsoft.com", "apple.com", "amazon.com",
-        "facebook.com", "instagram.com", "netflix.com", "bankofamerica.com"
+        "paypal.com", "google.com", "microsoft.com",
+        "apple.com", "amazon.com", "facebook.com",
+        "instagram.com", "netflix.com",
+        "bankofamerica.com"
+    };
+
+    private static readonly string[] SuspiciousTlds =
+    {
+        ".zip", ".xyz", ".top"
     };
 
     public static UrlRiskResult Evaluate(string rawUrl)
     {
         var reasons = new List<UrlRiskReason>();
 
-        if (!Uri.TryCreate(rawUrl, UriKind.Absolute, out var uri))
+        // Rule 1: Validate URL
+        if (string.IsNullOrWhiteSpace(rawUrl) ||
+            !Uri.TryCreate(rawUrl, UriKind.Absolute, out var uri) ||
+            (uri.Scheme != Uri.UriSchemeHttp &&
+             uri.Scheme != Uri.UriSchemeHttps) ||
+            string.IsNullOrWhiteSpace(uri.Host))
         {
-            return new UrlRiskResult(100, new[] { new UrlRiskReason("invalid-url", "The URL could not be parsed.", 100) });
+            return new UrlRiskResult(100, new[]
+            {
+                new UrlRiskReason(
+                    "invalid-url",
+                    "The URL is invalid or unsupported.",
+                    100)
+            });
         }
 
-        if (!string.Equals(uri.Scheme, "https", StringComparison.OrdinalIgnoreCase))
+        string host = uri.Host.ToLowerInvariant();
+
+        // Rule 2: Check HTTPS
+        if (uri.Scheme != Uri.UriSchemeHttps)
         {
-            reasons.Add(new UrlRiskReason("no-https", "Connection is not HTTPS.", 20));
+            reasons.Add(new UrlRiskReason(
+                "no-https",
+                "Connection is not HTTPS.",
+                20));
         }
 
-        if (Regex.IsMatch(uri.Host, @"^\d{1,3}(\.\d{1,3}){3}$"))
+        // Rule 3: Detect raw IP addresses
+        bool isIpHost = IPAddress.TryParse(host, out _);
+
+        if (isIpHost)
         {
-            reasons.Add(new UrlRiskReason("ip-host", "Host is a raw IP address.", 25));
+            reasons.Add(new UrlRiskReason(
+                "ip-host",
+                "Host is a raw IP address.",
+                25));
         }
 
-        if (rawUrl.Contains('@'))
+        // Rule 4: Detect @ trick
+        if (!string.IsNullOrEmpty(uri.UserInfo))
         {
-            reasons.Add(new UrlRiskReason("at-trick", "URL contains the \"@\" trick.", 30));
+            reasons.Add(new UrlRiskReason(
+                "at-trick",
+                "URL contains the @ trick.",
+                30));
         }
 
-        var labelCount = uri.Host.Split('.').Length;
-        if (labelCount >= 4)
+        // Rule 5: Detect excessive subdomains
+        // IP addresses must not be treated as subdomains.
+        int labelCount = host.Split('.').Length;
+
+        if (!isIpHost && labelCount >= 4)
         {
-            reasons.Add(new UrlRiskReason("many-subdomains", "Excessive number of subdomains.", 15));
+            reasons.Add(new UrlRiskReason(
+                "many-subdomains",
+                "Excessive number of subdomains.",
+                15));
         }
 
+        // Rule 6: Detect long URLs
         if (rawUrl.Length > 90)
         {
-            reasons.Add(new UrlRiskReason("long-url", "Unusually long URL.", 10));
+            reasons.Add(new UrlRiskReason(
+                "long-url",
+                "Unusually long URL.",
+                10));
         }
 
-        if (uri.Host.Contains("xn--", StringComparison.OrdinalIgnoreCase))
+        // Rule 7: Detect punycode
+        if (host.Contains("xn--",
+            StringComparison.OrdinalIgnoreCase))
         {
-            reasons.Add(new UrlRiskReason("punycode", "Host uses punycode (possible look-alike characters).", 25));
+            reasons.Add(new UrlRiskReason(
+                "punycode",
+                "Host uses punycode (possible look-alike characters).",
+                25));
         }
 
-        if (SuspiciousKeywords.Any(k => rawUrl.Contains(k, StringComparison.OrdinalIgnoreCase)))
+        // Rule 8: Detect suspicious keywords
+        if (SuspiciousKeywords.Any(keyword =>
+            rawUrl.Contains(
+                keyword,
+                StringComparison.OrdinalIgnoreCase)))
         {
-            reasons.Add(new UrlRiskReason("suspicious-keyword", "Contains a suspicious keyword (login, verify, secure, ...).", 10));
+            reasons.Add(new UrlRiskReason(
+                "suspicious-keyword",
+                "Contains a suspicious keyword.",
+                10));
         }
 
-        var typosquat = WellKnownBrands.FirstOrDefault(b => IsCloseTyposquat(uri.Host, b));
-        if (typosquat is not null)
+        // Rule 9: Detect typosquatting
+        var typosquat = WellKnownBrands.FirstOrDefault(
+            brand => IsCloseTyposquat(host, brand));
+
+        if (typosquat != null)
         {
-            reasons.Add(new UrlRiskReason("typosquat", $"Looks like a typosquat of {typosquat}.", 35));
+            reasons.Add(new UrlRiskReason(
+                "typosquat",
+                $"Looks like a typosquat of {typosquat}.",
+                35));
         }
 
-        var score = Math.Min(100, reasons.Sum(r => r.Weight));
+        // Rule 10: Detect brand impersonation
+        // Example: paypal.com.evil.example
+        var impersonatedBrand = WellKnownBrands.FirstOrDefault(
+            brand =>
+                !host.Equals(
+                    brand,
+                    StringComparison.OrdinalIgnoreCase) &&
+                !host.EndsWith(
+                    "." + brand,
+                    StringComparison.OrdinalIgnoreCase) &&
+                (host.StartsWith(
+                    brand + ".",
+                    StringComparison.OrdinalIgnoreCase) ||
+                 host.Contains(
+                    "." + brand + ".",
+                    StringComparison.OrdinalIgnoreCase)));
+
+        if (impersonatedBrand != null)
+        {
+            reasons.Add(new UrlRiskReason(
+                "brand-impersonation",
+                $"URL appears to impersonate {impersonatedBrand}.",
+                35));
+        }
+
+        // Rule 11: Detect suspicious TLDs
+        if (!isIpHost && SuspiciousTlds.Any(tld =>
+            host.EndsWith(
+                tld,
+                StringComparison.OrdinalIgnoreCase)))
+        {
+            reasons.Add(new UrlRiskReason(
+                "suspicious-tld",
+                "Domain uses a potentially suspicious TLD.",
+                15));
+        }
+
+        // Calculate final score (maximum 100)
+        int score = Math.Min(
+            100,
+            reasons.Sum(reason => reason.Weight));
+
         return new UrlRiskResult(score, reasons);
     }
 
-    private static bool IsCloseTyposquat(string host, string brandDomain)
+    private static bool IsCloseTyposquat(
+        string host,
+        string brandDomain)
     {
-        if (host.Equals(brandDomain, StringComparison.OrdinalIgnoreCase))
+        // Do not flag legitimate brand domains.
+        if (host.Equals(
+            brandDomain,
+            StringComparison.OrdinalIgnoreCase))
         {
-            return false; // the real domain itself - not a typosquat
+            return false;
         }
 
-        var distance = LevenshteinDistance(host, brandDomain);
+        // Do not flag legitimate subdomains.
+        if (host.EndsWith(
+            "." + brandDomain,
+            StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        int distance = LevenshteinDistance(
+            host,
+            brandDomain);
+
         return distance > 0 && distance <= 2;
     }
 
-    private static int LevenshteinDistance(string a, string b)
+    private static int LevenshteinDistance(
+        string a,
+        string b)
     {
-        var dp = new int[a.Length + 1, b.Length + 1];
-        for (var i = 0; i <= a.Length; i++) dp[i, 0] = i;
-        for (var j = 0; j <= b.Length; j++) dp[0, j] = j;
+        int[,] dp = new int[a.Length + 1, b.Length + 1];
 
-        for (var i = 1; i <= a.Length; i++)
+        for (int i = 0; i <= a.Length; i++)
         {
-            for (var j = 1; j <= b.Length; j++)
+            dp[i, 0] = i;
+        }
+
+        for (int j = 0; j <= b.Length; j++)
+        {
+            dp[0, j] = j;
+        }
+
+        for (int i = 1; i <= a.Length; i++)
+        {
+            for (int j = 1; j <= b.Length; j++)
             {
-                var cost = a[i - 1] == b[j - 1] ? 0 : 1;
-                dp[i, j] = Math.Min(Math.Min(dp[i - 1, j] + 1, dp[i, j - 1] + 1), dp[i - 1, j - 1] + cost);
+                int cost = a[i - 1] == b[j - 1] ? 0 : 1;
+
+                dp[i, j] = Math.Min(
+                    Math.Min(
+                        dp[i - 1, j] + 1,
+                        dp[i, j - 1] + 1),
+                    dp[i - 1, j - 1] + cost);
             }
         }
 

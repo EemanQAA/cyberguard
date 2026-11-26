@@ -32,12 +32,14 @@ public class IpWhoIsGeoService : IGeoLocationService
                 response.connection?.isp,
                 response.connection?.asn?.ToString());
         }
-        catch
-        {
-            // Network failure or free-tier rate limit - the scan should still complete
-            // with "location unavailable" rather than fail the whole request.
-            return null;
-        }
+      catch (OperationCanceledException) when (ct.IsCancellationRequested)
+{
+    throw;
+}
+catch
+{
+    return null;
+}
     }
 
     private record IpWhoIsResponse(

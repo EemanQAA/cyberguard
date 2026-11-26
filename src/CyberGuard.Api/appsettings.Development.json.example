@@ -1,0 +1,8 @@
+{
+  "ConnectionStrings": {
+    "Default": "Host=db.YOUR_PROJECT_REF.supabase.co;Port=5432;Database=postgres;Username=postgres;Password=YOUR_DB_PASSWORD;SSL Mode=Require;Trust Server Certificate=true"
+  },
+  "Jwt": {
+    "SigningKey": "replace-with-a-random-32+-character-secret-never-commit-the-real-one"
+  }
+}

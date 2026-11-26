@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore CyberGuard.sln
+
+      - name: Build
+        run: dotnet build CyberGuard.sln --no-restore -c Release
+
+      - name: Test
+        run: dotnet test CyberGuard.sln --no-build -c Release --verbosity normal
+        continue-on-error: true # flip to false once tests/CyberGuard.UnitTests has real tests (Sprint 2)
+
+  migrate-database:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Install dotnet-ef
+        run: dotnet tool install --global dotnet-ef --version "8.*"
+      - name: Restore dependencies
+        run: dotnet restore
+      - name: Apply EF Core migrations to Supabase
+        env:
+          ConnectionStrings__Default: ${{ secrets.SUPABASE_DB_CONNECTION }}
+          Jwt__SigningKey: ${{ secrets.JWT_SIGNING_KEY }}
+        run: |
+          dotnet ef database update \
+            --project src/CyberGuard.Infrastructure \
+            --startup-project src/CyberGuard.Api

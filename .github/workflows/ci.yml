@@ -41,7 +41,8 @@ jobs:
 
       - name: Install dotnet-ef
         run: dotnet tool install --global dotnet-ef
-
+      - name: Restore dependencies
+        run: dotnet restore
       - name: Apply EF Core migrations to Supabase
         env:
           ConnectionStrings__Default: ${{ secrets.SUPABASE_DB_CONNECTION }}

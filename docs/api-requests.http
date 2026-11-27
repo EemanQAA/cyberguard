@@ -1,0 +1,118 @@
+### CyberGuard API requests for manual testing.
+### Use with the "REST Client" extension in VS Code (humao.rest-client): click "Send Request"
+### above each request. Run the API first:  dotnet run --project src/CyberGuard.Api
+### Enum values are numbers: PasswordRating 0 Weak, 1 Fair, 2 Strong;
+### UrlVerdict 0 Unknown, 1 Safe, 2 Phishing; AlertStatus 0 New, 1 Read, 2 Reviewed.
+
+@host = http://localhost:5042
+@email = tester1@example.com
+@password = Test@12345
+
+### Health
+GET {{host}}/api/v1/health
+
+### Register (run once; a second run returns an error because the email exists)
+POST {{host}}/api/v1/auth/register
+Content-Type: application/json
+
+{ "email": "{{email}}", "password": "{{password}}" }
+
+### Login (saves the token for the requests below)
+# @name login
+POST {{host}}/api/v1/auth/login
+Content-Type: application/json
+
+{ "email": "{{email}}", "password": "{{password}}" }
+
+###
+@token = {{login.response.body.accessToken}}
+
+### My profile
+GET {{host}}/api/v1/users/me
+Authorization: Bearer {{token}}
+
+### Save a password check (only the result, never the password)
+POST {{host}}/api/v1/password-checks
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "entropyBits": 61.4, "rating": 2, "matchedCommonOrWordlist": false }
+
+### List password checks
+GET {{host}}/api/v1/password-checks?page=1&pageSize=20
+Authorization: Bearer {{token}}
+
+### Add a wordlist entry
+POST {{host}}/api/v1/wordlist
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "word": "fluffy2020", "category": "pet" }
+
+### List wordlist
+GET {{host}}/api/v1/wordlist
+Authorization: Bearer {{token}}
+
+### Scan a URL
+# @name urlScan
+POST {{host}}/api/v1/url-scans
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "url": "https://paypa1.com/login" }
+
+###
+@urlScanId = {{urlScan.response.body.id}}
+
+### Get that URL scan
+GET {{host}}/api/v1/url-scans/{{urlScanId}}
+Authorization: Bearer {{token}}
+
+### Mark it as phishing
+PATCH {{host}}/api/v1/url-scans/{{urlScanId}}/verdict
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "verdict": 2 }
+
+### Scan text for PII (the raw text is not stored)
+# @name piiScan
+POST {{host}}/api/v1/pii-scans
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "text": "Email ali.khan@example.com, CNIC 35202-1234567-1, card 4111 1111 1111 1111, key AKIAIOSFODNN7EXAMPLE" }
+
+###
+@piiScanId = {{piiScan.response.body.id}}
+
+### Save the URL scan as a report with a note
+# @name report
+POST {{host}}/api/v1/reports
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "urlScanId": "{{urlScanId}}", "note": "Check with the bank" }
+
+### List reports
+GET {{host}}/api/v1/reports
+Authorization: Bearer {{token}}
+
+### Alerts
+GET {{host}}/api/v1/alerts
+Authorization: Bearer {{token}}
+
+### Mark all alerts as read
+POST {{host}}/api/v1/alerts/mark-all-read
+Authorization: Bearer {{token}}
+
+### History of everything
+GET {{host}}/api/v1/history
+Authorization: Bearer {{token}}
+
+### Dashboard (hygiene score)
+GET {{host}}/api/v1/dashboard
+Authorization: Bearer {{token}}
+
+### Cross-user check: no token must give 401
+GET {{host}}/api/v1/url-scans
